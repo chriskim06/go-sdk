@@ -109,6 +109,9 @@ func errRequest(ee logger.ErrorEvent) *raven.Request {
 		return &raven.Request{}
 	}
 
+	// remove cookies from the error event if they exist
+	typed.Header.Del("Cookie")
+
 	return raven.NewRequest(typed)
 }
 

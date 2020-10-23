@@ -38,15 +38,21 @@ func TestNew(t *testing.T) {
 func TestErrEvent(t *testing.T) {
 	assert := assert.New(t)
 
+	req := &http.Request{
+		Method: "POST",
+		Host:   "example.org",
+		TLS:    &tls.ConnectionState{},
+		URL:    webutil.MustParseURL("https://example.org/foo"),
+		Header: make(http.Header),
+	}
+	req.AddCookie(&http.Cookie{
+		Name:  "foo",
+		Value: "bar",
+	})
 	event := errEvent(context.Background(), logger.ErrorEvent{
-		Flag: logger.Fatal,
-		Err:  ex.New("this is a test", ex.OptMessage("a message")),
-		State: &http.Request{
-			Method: "POST",
-			Host:   "example.org",
-			TLS:    &tls.ConnectionState{},
-			URL:    webutil.MustParseURL("https://example.org/foo"),
-		},
+		Flag:  logger.Fatal,
+		Err:   ex.New("this is a test", ex.OptMessage("a message")),
+		State: req,
 	})
 
 	assert.NotNil(event)
@@ -59,6 +65,7 @@ func TestErrEvent(t *testing.T) {
 	assert.NotEmpty(event.Fingerprint)
 	assert.NotNil(event.Exception[0].Stacktrace)
 	assert.NotEmpty(event.Exception[0].Stacktrace.Frames)
+	assert.Equal("", event.Request.Cookies)
 }
 
 func TestErrRequest(t *testing.T) {
@@ -67,16 +74,23 @@ func TestErrRequest(t *testing.T) {
 	res := errRequest(logger.ErrorEvent{})
 	assert.Empty(res.URL)
 
+	req := &http.Request{
+		Method: "POST",
+		Host:   "example.org",
+		TLS:    &tls.ConnectionState{},
+		URL:    webutil.MustParseURL("https://example.org/foo"),
+		Header: make(http.Header),
+	}
+	req.AddCookie(&http.Cookie{
+		Name:  "foo",
+		Value: "bar",
+	})
 	res = errRequest(logger.ErrorEvent{
-		State: &http.Request{
-			Method: "POST",
-			Host:   "example.org",
-			TLS:    &tls.ConnectionState{},
-			URL:    webutil.MustParseURL("https://example.org/foo"),
-		},
+		State: req,
 	})
 	assert.Equal("POST", res.Method)
 	assert.Equal("https://example.org/foo", res.URL)
+	assert.Equal("", res.Cookies)
 }
 
 func TestErrFrames(t *testing.T) {
