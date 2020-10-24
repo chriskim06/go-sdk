@@ -66,6 +66,7 @@ func TestErrEvent(t *testing.T) {
 	assert.NotNil(event.Exception[0].Stacktrace)
 	assert.NotEmpty(event.Exception[0].Stacktrace.Frames)
 	assert.Equal("", event.Request.Cookies)
+	assert.Equal("foo=bar", req.Header.Get("Cookie"))
 }
 
 func TestErrRequest(t *testing.T) {

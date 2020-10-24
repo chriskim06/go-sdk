@@ -10,6 +10,7 @@ import (
 
 	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/logger"
+	"github.com/blend/go-sdk/webutil"
 )
 
 var (
@@ -109,10 +110,13 @@ func errRequest(ee logger.ErrorEvent) *raven.Request {
 		return &raven.Request{}
 	}
 
-	// remove cookies from the error event if they exist
-	typed.Header.Del("Cookie")
+	req := raven.NewRequest(typed)
 
-	return raven.NewRequest(typed)
+	// remove cookies from the sentry request if they exist
+	req.Cookies = ""
+	delete(req.Headers, webutil.HeaderCookie)
+
+	return req
 }
 
 func errStackTrace(err error) *raven.Stacktrace {
