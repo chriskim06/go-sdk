@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1226,7 +1227,27 @@ func callerInfo() []string {
 
 		// Drop the package
 		segments := strings.Split(name, ".")
-		name = segments[len(segments)-1]
+		idx := len(segments) - 1
+		name = segments[idx]
+
+		// goroutines called from a function have a name in the format:
+		//   package.FunctionName.func1.1.1
+		//
+		// the first goroutine spawned from FunctionName is called funcN
+		// and nested goroutines in that are numbered. Find the first
+		// function name that isn't a spawned goroutine.
+		for {
+			_, err := strconv.Atoi(name)
+			nestedGoroutine := err == nil
+			firstGoroutine := strings.HasPrefix(name, "func")
+			if !firstGoroutine && !nestedGoroutine {
+				break
+			}
+
+			idx--
+			name = segments[idx]
+		}
+
 		if isTest(name, "Test") ||
 			isTest(name, "Benchmark") ||
 			isTest(name, "Example") {
